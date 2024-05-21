@@ -42,14 +42,14 @@ func (ent *Entity[T]) Select(ctx context.Context, where string, args ...any) ([]
 
 // SelectPage selects a page of records from the database.
 // page_idx shoud be 1-based.
-// Return: records, current page index, page size, total count, error
-func (ent *Entity[T]) SelectPage(ctx context.Context, page_idx, page_size int64, where string, args ...any) ([]*T, int64, int64, int64, error) {
+// Return: records, current page index, page size, page_count, total count, error
+func (ent *Entity[T]) SelectPage(ctx context.Context, page_idx, page_size int64, where string, args ...any) ([]*T, int64, int64, int64, int64, error) {
 	sql := "SELECT count(*) FROM `" + ent.tableNameStr + "` WHERE " + where
 	var cnt int64
 	vargs := make([]interface{}, 0, len(args)+2)
 	vargs = append(vargs, args...)
 	if e := ent.dbRead.Ctx.QueryRowContext(ctx, sql, args...).Scan(&cnt); e != nil {
-		return nil, 0, 0, 0, errors.Wrap(e, "SelectPage failed")
+		return nil, 0, 0, 0, 0, errors.Wrap(e, "SelectPage failed")
 	}
 
 	if page_size < 1 {
@@ -57,7 +57,7 @@ func (ent *Entity[T]) SelectPage(ctx context.Context, page_idx, page_size int64,
 	}
 
 	if cnt == 0 {
-		return make([]*T, 0), 1, page_size, 0, nil
+		return make([]*T, 0), 1, page_size, 0, 0, nil
 	}
 
 	page_count := cnt / page_size
@@ -83,16 +83,16 @@ func (ent *Entity[T]) SelectPage(ctx context.Context, page_idx, page_size int64,
 	sql += " LIMIT ?, ?"
 	rows, e := ent.dbRead.Ctx.QueryContext(ctx, sql, vargs...)
 	if e != nil {
-		return nil, 0, 0, 0, errors.Wrap(e, "SelectPage failed")
+		return nil, 0, 0, 0, 0, errors.Wrap(e, "SelectPage failed")
 	}
 	defer rows.Close()
 	result := make([]*T, 0)
 	for rows.Next() {
 		v := new(T)
 		if e := ent.scan(rows, v); e != nil {
-			return nil, 0, 0, 0, errors.Wrap(e, "SelectPage failed")
+			return nil, 0, 0, 0, 0, errors.Wrap(e, "SelectPage failed")
 		}
 		result = append(result, v)
 	}
-	return result, page_idx, page_size, cnt, nil
+	return result, page_idx, page_size, page_count, cnt, nil
 }
