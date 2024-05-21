@@ -16,7 +16,7 @@ type entityField struct {
 	SerializeMethod uint8
 }
 
-type Entity[T struct{}] struct {
+type Entity[T interface{}] struct {
 	fields         []*entityField
 	tableNameStr   string
 	columnNamesStr string
@@ -27,7 +27,7 @@ var (
 	entityCache = make(map[reflect.Type]interface{})
 )
 
-func GetEntity[T struct{}, S struct{}](schema *Schema[S]) *Entity[T] {
+func GetEntity[T interface{}, S interface{}](schema *Schema[S]) *Entity[T] {
 	t := reflect.TypeOf((*T)(nil)).Elem()
 	if entity, ok := entityCache[t]; ok {
 		return entity.(*Entity[T])

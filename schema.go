@@ -2,7 +2,7 @@ package mysql
 
 import "database/sql"
 
-type Schema[T struct{}] struct {
+type Schema[T interface{}] struct {
 	Name           string
 	Fields         []*Field
 	Indices        []*Index

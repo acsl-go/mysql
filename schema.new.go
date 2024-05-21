@@ -8,7 +8,7 @@ import (
 	"github.com/pkg/errors"
 )
 
-func NewSchema[T struct{}](dbr *DB, dbw *DB, name string) *Schema[T] {
+func NewSchema[T interface{}](dbr *DB, dbw *DB, name string) *Schema[T] {
 	schema := &Schema[T]{
 		Name:    name,
 		Engine:  "InnoDB",
