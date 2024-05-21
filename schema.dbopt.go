@@ -137,7 +137,7 @@ func (sc *Schema[T]) createSchema(ctx context.Context) error {
 }
 
 func (sc *Schema[T]) updateSchema(ctx context.Context) error {
-	cur := &Schema[T]{Name: sc.Name}
+	cur := &Schema[T]{Name: sc.Name, dbWrite: sc.dbWrite}
 	e := cur.loadSchema(ctx)
 	if e != nil {
 		if e == ErrNotFound {
