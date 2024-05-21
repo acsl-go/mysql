@@ -84,9 +84,9 @@ func (ent *Entity[T]) scan(r rowLike, data *T) error {
 	}
 	for i, field := range ent.fields {
 		if field.SerializeMethod == JSON {
-			json.Unmarshal([]byte(args[i].(string)), val.Field(field.FieldIndex).Addr().Interface())
+			json.Unmarshal([]byte(*args[i].(*string)), val.Field(field.FieldIndex).Addr().Interface())
 		} else if field.SerializeMethod == YAML {
-			yaml.Unmarshal([]byte(args[i].(string)), val.Field(field.FieldIndex).Addr().Interface())
+			yaml.Unmarshal([]byte(*args[i].(*string)), val.Field(field.FieldIndex).Addr().Interface())
 		}
 	}
 	return nil
