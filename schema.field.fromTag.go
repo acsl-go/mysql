@@ -125,9 +125,6 @@ func readName(tag string, i int) (string, int) {
 		o += string(tag[i])
 		i++
 	}
-	if i >= len(tag) {
-		panic("tag format error (2): " + tag)
-	}
 	return o, i
 }
 
