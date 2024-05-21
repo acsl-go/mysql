@@ -6,11 +6,8 @@ import (
 	"github.com/pkg/errors"
 )
 
-// Get a certain record from the database by primary key(s).
-func (sc *Schema) Count(ctx context.Context, where string, args ...any) (int64, error) {
-	if sc.dataInfo == nil {
-		return 0, ErrNoDataInfo
-	}
+// Get record count from the database
+func (sc *Schema[T]) Count(ctx context.Context, where string, args ...any) (int64, error) {
 	if sc.dbRead == nil {
 		return 0, ErrNotReady
 	}

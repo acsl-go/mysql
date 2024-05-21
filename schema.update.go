@@ -7,72 +7,56 @@ import (
 	"github.com/pkg/errors"
 )
 
-// Update updates a row in the table.
-// It's possible to update a certain columns by providing the column names.
-func (sc *Schema) Update(ctx context.Context, v any, columns ...string) (int64, error) {
-	if sc.dataInfo == nil {
-		return 0, ErrNoDataInfo
-	}
-
+func (sc *Schema[T]) Update(ctx context.Context, data *T, columns ...string) (int64, error) {
 	if sc.dbWrite == nil {
 		return 0, ErrNotReady
 	}
 
-	if len(sc.dataInfo.PKFields) == 0 {
-		return 0, ErrNoPrimaryKey
-	}
-
-	rv := reflect.ValueOf(v)
-	elem := followPointer(rv)
-
-	if elem.Kind() != reflect.Struct {
-		return 0, ErrInvalidData
-	}
-
-	sql := "UPDATE `" + sc.Name + "` SET "
-	args := make([]any, 0, len(sc.dataInfo.Fields))
+	val := reflect.ValueOf(data).Elem()
+	args := make([]any, 0, len(sc.Fields))
 
 	if len(columns) == 0 {
-		// Update all
-		for _, field := range sc.dataInfo.Fields {
-			if field.IsPrimaryKey {
-				continue
-			}
-			sql += "`" + field.ColumnName + "` = ?,"
-			args = append(args, field.Serialize(elem))
+		// Update all fields except primary key
+		for _, field := range sc.updateAllFields {
+			args = append(args, SerializeField(field.SerializeMethod, val.Field(field.EntityIndex).Interface()))
 		}
-		sql = sql[:len(sql)-1] // Remove last comma
+		for _, field := range sc.primaryFields {
+			args = append(args, SerializeField(field.SerializeMethod, val.Field(field.EntityIndex).Interface()))
+		}
+		r, e := sc.updateAllStmt.ExecContext(ctx, args...)
+		if e != nil {
+			return 0, errors.Wrap(e, "Update failed")
+		}
+		if n, e := r.RowsAffected(); e != nil {
+			return 0, errors.Wrap(e, "Get rows affected failed")
+		} else {
+			return n, nil
+		}
 	} else {
-		// Update certain columns
+		s := "UPDATE `" + sc.Name + "` SET "
 		for _, column := range columns {
-			field, ok := sc.dataInfo.ByColumName[column]
+			field, ok := sc.FieldsByColumn[column]
 			if !ok {
 				return 0, errors.New("Unknown column: " + column)
 			}
 			if field.IsPrimaryKey {
 				return 0, errors.New("Cannot update primary key: " + column)
 			}
-			sql += "`" + column + "` = ?,"
-			args = append(args, field.Serialize(elem))
+			s += "`" + column + "` = ?,"
+			args = append(args, SerializeField(field.SerializeMethod, val.Field(field.EntityIndex).Interface()))
 		}
-		sql = sql[:len(sql)-1] // Remove last comma
-	}
-
-	sql += " WHERE "
-	for _, field := range sc.dataInfo.PKFields {
-		sql += "`" + field.ColumnName + "` = ? AND "
-		args = append(args, field.Serialize(elem))
-	}
-	sql = sql[:len(sql)-5] // Remove last " AND "
-
-	r, e := sc.dbWrite.Ctx.ExecContext(ctx, sql, args...)
-	if e != nil {
-		return 0, errors.Wrap(e, "Update failed")
-	}
-
-	if n, e := r.RowsAffected(); e != nil {
-		return 0, errors.Wrap(e, "Get rows affected failed")
-	} else {
-		return n, nil
+		s = s[:len(s)-1] + " WHERE " + sc.primaryWhere
+		for _, field := range sc.primaryFields {
+			args = append(args, SerializeField(field.SerializeMethod, val.Field(field.EntityIndex).Interface()))
+		}
+		r, e := sc.dbWrite.Ctx.ExecContext(ctx, s, args...)
+		if e != nil {
+			return 0, errors.Wrap(e, "Update failed")
+		}
+		if n, e := r.RowsAffected(); e != nil {
+			return 0, errors.Wrap(e, "Get rows affected failed")
+		} else {
+			return n, nil
+		}
 	}
 }
