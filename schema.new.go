@@ -22,6 +22,11 @@ func NewSchema[T interface{}](dbr *DB, dbw *DB, name string) *Schema[T] {
 		panic(err)
 	}
 
+	if err := schema.init(); err != nil {
+		logger.Fatal("%+v", errors.Wrap(err, "Init Schema Failed"))
+		panic(err)
+	}
+
 	return schema
 }
 
