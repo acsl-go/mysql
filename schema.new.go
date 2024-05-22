@@ -43,6 +43,8 @@ func (sc *Schema[T]) init() error {
 		sqla += "`" + field.Name + "`,"
 		sqlb += "?,"
 	}
+	sqla = sqla[:len(sqla)-1] + ")"
+	sqlb = sqlb[:len(sqlb)-1] + ")"
 	sc.insertStmt, e = sc.dbWrite.Ctx.Prepare(sqla + sqlb)
 	if e != nil {
 		return errors.Wrap(e, "Prepare insert failed")
