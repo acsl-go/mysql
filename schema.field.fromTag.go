@@ -150,11 +150,18 @@ func parseTagArguments(tag string) []tagItem {
 	return items
 }
 
-func (fd *Field) FromTag(tag string) {
+func (fd *Field) FromTag(tag string, structField reflect.StructField) {
 	tagItems := parseTagArguments(tag)
 	for _, item := range tagItems {
 		if fd.Name == "" {
-			fd.Name = item.Name
+			if item.Name == "." {
+				fd.Name = tryGetFieldNameFromOtherTag(structField.Tag)
+				if fd.Name == "" {
+					fd.Name = camelToSnake(structField.Name)
+				}
+			} else {
+				fd.Name = item.Name
+			}
 			continue
 		}
 		switch item.Name {
@@ -247,11 +254,12 @@ func (fd *Field) FromTag(tag string) {
 	}
 }
 
-func (fd *Field) CompleteWithType(t reflect.Type) {
+func (fd *Field) CompleteWithType(structField reflect.StructField) {
 	if fd.Name == "" {
-		fd.Name = camelToSnake(t.Name())
+		fd.Name = camelToSnake(structField.Name)
 	}
 	if fd.Type == "" {
+		t := structField.Type
 		switch t.Kind() {
 		case reflect.Int8, reflect.Int16, reflect.Int32:
 			fd.Type = "int(11)"

@@ -19,8 +19,8 @@ func (sc *Schema[T]) fromType(t reflect.Type) {
 				Indices:     make([]*FieldIndexDecl, 0),
 				EntityIndex: i,
 			}
-			field.FromTag(tag)
-			field.CompleteWithType(fieldType.Type)
+			field.FromTag(tag, fieldType)
+			field.CompleteWithType(fieldType)
 			sc.Fields = append(sc.Fields, field)
 			if field.IsAutoIncrement {
 				sc.aiField = field

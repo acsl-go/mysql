@@ -40,7 +40,7 @@ func GetEntity[T interface{}, S interface{}](schema *Schema[S]) *Entity[T] {
 	}
 	for i := 0; i < t.NumField(); i++ {
 		fieldType := t.Field(i)
-		if tag, ok := fieldType.Tag.Lookup("db"); ok {
+		if tag := tryGetFieldNameFromTag(fieldType.Tag); tag != "" {
 			field := &entityField{FieldIndex: i}
 			if tag != "" {
 				tag_parts := strings.Split(tag, " ")
