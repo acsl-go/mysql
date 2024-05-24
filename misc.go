@@ -22,6 +22,9 @@ func camelToSnake(s string) string {
 
 func tryGetFieldNameFromTag(tag reflect.StructTag) string {
 	if tag, ok := tag.Lookup("db"); ok {
+		if tag == "-" {
+			return ""
+		}
 		return tag
 	}
 	return tryGetFieldNameFromOtherTag(tag)
