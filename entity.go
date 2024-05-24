@@ -46,6 +46,9 @@ func GetEntity[T interface{}, S interface{}](schema *Schema[S]) *Entity[T] {
 				tag_parts := strings.Split(tag, " ")
 				field.ColumnName = tag_parts[0]
 			}
+			if field.ColumnName == "." {
+				field.ColumnName = tryGetFieldNameFromOtherTag(fieldType.Tag)
+			}
 			if field.ColumnName == "" {
 				field.ColumnName = camelToSnake(fieldType.Name)
 			}
