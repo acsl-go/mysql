@@ -69,9 +69,11 @@ func (ent *Entity[T]) SelectPage(ctx context.Context, page_idx, page_size int64,
 		page_idx = 1
 	}
 
+	/* Allow page_idx > page_count
 	if page_idx > page_count {
 		page_idx = page_count
 	}
+	*/
 
 	offset := (page_idx - 1) * page_size
 
