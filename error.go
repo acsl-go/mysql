@@ -9,4 +9,5 @@ var (
 	ErrNotReady       = errors.New("stmtInsert is not ready, call Prepare on Schema first")
 	ErrNoPrimaryKey   = errors.New("no primary key")
 	ErrNoRowsAffected = errors.New("no rows affected")
+	ErrDuplicateKey   = errors.New("duplicate key")
 )

@@ -4,6 +4,7 @@ import (
 	"context"
 	"reflect"
 
+	drv "github.com/go-sql-driver/mysql"
 	"github.com/pkg/errors"
 )
 
@@ -21,6 +22,12 @@ func (sc *Schema[T]) Insert(ctx context.Context, data *T) error {
 
 	r, e := sc.insertStmt.ExecContext(ctx, args...)
 	if e != nil {
+		mysqlErr, ok := e.(*drv.MySQLError)
+		if ok {
+			if mysqlErr.Number == 1062 {
+				return ErrDuplicateKey
+			}
+		}
 		return errors.Wrap(e, "Insert failed")
 	}
 
