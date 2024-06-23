@@ -176,6 +176,7 @@ func (fd *Field) FromTag(tag string, structField reflect.StructField) {
 			if fd.Type == "" {
 				panic("unsigned must follow a type")
 			}
+			fd.IsUnsigned = true
 			fd.Type += " unsigned"
 		case "def":
 			fd.DefaultValue = item.Value

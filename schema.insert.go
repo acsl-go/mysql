@@ -36,7 +36,11 @@ func (sc *Schema[T]) Insert(ctx context.Context, data *T) error {
 		if e != nil {
 			return errors.Wrap(e, "Get last insert id failed")
 		}
-		val.Field(sc.aiField.EntityIndex).SetInt(id)
+		if sc.aiField.IsUnsigned {
+			val.Field(sc.aiField.EntityIndex).SetUint(uint64(id))
+		} else {
+			val.Field(sc.aiField.EntityIndex).SetInt(id)
+		}
 	}
 
 	return nil

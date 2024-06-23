@@ -12,6 +12,7 @@ type Field struct {
 	IsPrimaryKey    bool
 	IsAutoIncrement bool
 	IsNullable      bool
+	IsUnsigned      bool
 	DefaultValue    string // Default value in SQL format
 	Comment         string
 	SerializeMethod uint8 // json | yaml | none
