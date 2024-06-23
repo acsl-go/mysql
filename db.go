@@ -56,3 +56,15 @@ func (db *DB) Tx(ctx context.Context, f func(context.Context, *sql.Tx) error) er
 
 	return nil
 }
+
+func (db *DB) Exec(ctx context.Context, query string, args ...interface{}) (int64, error) {
+	r, e := db.Ctx.ExecContext(ctx, query, args...)
+	if e != nil {
+		return 0, errors.Wrap(e, "Exec failed")
+	}
+	if n, e := r.RowsAffected(); e != nil {
+		return 0, errors.Wrap(e, "Get rows affected failed")
+	} else {
+		return n, nil
+	}
+}
