@@ -2,6 +2,7 @@ package mysql
 
 import (
 	"context"
+	drv "database/sql"
 
 	"github.com/pkg/errors"
 )
@@ -14,6 +15,9 @@ func (ent *Entity[T]) SelectOne(ctx context.Context, where string, args ...any) 
 	row := ent.dbRead.Ctx.QueryRowContext(ctx, sql, args...)
 	v := new(T)
 	if e := ent.scan(row, v); e != nil {
+		if errors.Is(e, drv.ErrNoRows) {
+			return nil, ErrNotFound
+		}
 		return nil, e
 	}
 	return v, nil
