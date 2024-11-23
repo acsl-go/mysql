@@ -58,6 +58,12 @@ func (sc *Schema[T]) Update(ctx context.Context, data *T, columns ...string) (in
 		}
 		r, e := sc.dbWrite.Ctx.ExecContext(ctx, s, args...)
 		if e != nil {
+			mysqlErr, ok := e.(*drv.MySQLError)
+			if ok {
+				if mysqlErr.Number == 1062 {
+					return 0, ErrDuplicateKey
+				}
+			}
 			return 0, errors.Wrap(e, "Update failed")
 		}
 		if n, e := r.RowsAffected(); e != nil {
