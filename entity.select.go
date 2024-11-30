@@ -48,7 +48,10 @@ func (ent *Entity[T]) Select(ctx context.Context, where string, args ...any) ([]
 // page_idx shoud be 1-based.
 // Return: records, current page index, page size, page_count, total count, error
 func (ent *Entity[T]) SelectPage(ctx context.Context, page_idx, page_size int64, where string, args ...any) ([]*T, int64, int64, int64, int64, error) {
-	sql := "SELECT count(*) FROM `" + ent.tableNameStr + "` WHERE " + where
+	sql := "SELECT count(*) FROM `" + ent.tableNameStr + "`"
+	if where != "" {
+		sql += " WHERE " + where
+	}
 	var cnt int64
 	vargs := make([]interface{}, 0, len(args)+2)
 	vargs = append(vargs, args...)
