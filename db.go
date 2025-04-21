@@ -5,7 +5,7 @@ import (
 	"database/sql"
 	"fmt"
 
-	_ "github.com/go-sql-driver/mysql"
+	driver "github.com/go-sql-driver/mysql"
 	"github.com/pkg/errors"
 )
 
@@ -18,10 +18,35 @@ func NewDB(cfg *Config) (*DB, error) {
 	dsn := fmt.Sprintf("%s:%s@tcp(%s)/%s?charset=utf8mb4&parseTime=true&loc=Local", cfg.Username, cfg.Password, cfg.Addr, cfg.DataBase)
 	db, err := sql.Open("mysql", dsn)
 	if err != nil {
-		return nil, errors.Wrap(err, "Failed to configure database")
+		return nil, errors.Wrap(err, "Failed to configure database connection")
 	}
 
 	if err := db.Ping(); err != nil {
+		if sqlerr, ok := err.(*driver.MySQLError); ok {
+			if sqlerr.Number == 1049 {
+				// Database does not exist, try to create it
+				createDBDsn := fmt.Sprintf("%s:%s@tcp(%s)/?charset=utf8mb4&parseTime=true&loc=Local", cfg.Username, cfg.Password, cfg.Addr)
+				createDBConn, createErr := sql.Open("mysql", createDBDsn)
+				if createErr != nil {
+					return nil, errors.Wrap(createErr, "Failed to configure database connection for creating")
+				}
+				defer createDBConn.Close()
+
+				// Try to ping the connection to ensure it's valid
+				if err := createDBConn.Ping(); err != nil {
+					return nil, errors.Wrap(err, "Failed to connect to database for creating")
+				}
+
+				// Try to create the database
+				_, createErr = createDBConn.Exec(fmt.Sprintf("CREATE DATABASE IF NOT EXISTS `%s`", cfg.DataBase))
+				if createErr != nil {
+					return nil, errors.Wrap(createErr, "Failed to create database")
+				}
+
+				// Successfully created the database, now try to connect again
+				return NewDB(cfg)
+			}
+		}
 		return nil, errors.Wrap(err, "Failed to connect to database")
 	}
 
