@@ -45,7 +45,8 @@ func (sc *Schema[T]) init() error {
 	}
 	sqla = sqla[:len(sqla)-1] + ")"
 	sqlb = sqlb[:len(sqlb)-1] + ")"
-	sc.insertStmt, e = sc.dbWrite.Ctx.Prepare(sqla + sqlb)
+	sc.insertCmd = sqla + sqlb
+	sc.insertStmt, e = sc.dbWrite.Ctx.Prepare(sc.insertCmd)
 	if e != nil {
 		return errors.Wrap(e, "Prepare insert failed")
 	}
@@ -60,7 +61,8 @@ func (sc *Schema[T]) init() error {
 		sqla += "`" + field.Name + "` = ?,"
 	}
 	sqla = sqla[:len(sqla)-1] + " WHERE " + sc.primaryWhere
-	sc.updateAllStmt, e = sc.dbWrite.Ctx.Prepare(sqla)
+	sc.updateAllCmd = sqla
+	sc.updateAllStmt, e = sc.dbWrite.Ctx.Prepare(sc.updateAllCmd)
 	if e != nil {
 		return errors.Wrap(e, "Prepare updateAll failed")
 	}

@@ -6,7 +6,7 @@ import (
 	"github.com/pkg/errors"
 )
 
-func (sc *Schema[T]) Delete(ctx context.Context, where string, args ...any) (int64, error) {
+func (sc *Schema[T]) DeleteEx(ctx context.Context, db IDBLike, where string, args ...any) (int64, error) {
 	if sc.dbRead == nil {
 		return 0, ErrNotReady
 	}
@@ -16,7 +16,7 @@ func (sc *Schema[T]) Delete(ctx context.Context, where string, args ...any) (int
 		s += " WHERE " + where
 	}
 
-	if r, e := sc.dbRead.Ctx.ExecContext(ctx, s, args...); e != nil {
+	if r, e := db.ExecContext(ctx, s, args...); e != nil {
 		return 0, errors.Wrap(e, "SelectOne failed")
 	} else {
 		c, e := r.RowsAffected()
@@ -25,4 +25,8 @@ func (sc *Schema[T]) Delete(ctx context.Context, where string, args ...any) (int
 		}
 		return c, nil
 	}
+}
+
+func (sc *Schema[T]) Delete(ctx context.Context, where string, args ...any) (int64, error) {
+	return sc.DeleteEx(ctx, sc.dbWrite.Ctx, where, args...)
 }

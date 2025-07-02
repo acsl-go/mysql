@@ -8,11 +8,7 @@ import (
 	"github.com/pkg/errors"
 )
 
-func (sc *Schema[T]) Insert(ctx context.Context, data *T) error {
-	if sc.insertStmt == nil {
-		return ErrNotReady
-	}
-
+func (sc *Schema[T]) InsertEx(ctx context.Context, db IDBLike, data *T) error {
 	val := reflect.ValueOf(data).Elem()
 	args := make([]any, len(sc.insertArgFields))
 	for i := 0; i < len(sc.insertArgFields); i++ {
@@ -20,7 +16,8 @@ func (sc *Schema[T]) Insert(ctx context.Context, data *T) error {
 		args[i] = SerializeField(f.SerializeMethod, val.Field(f.EntityIndex).Interface())
 	}
 
-	r, e := sc.insertStmt.ExecContext(ctx, args...)
+	r, e := db.ExecContext(ctx, sc.insertCmd, args...)
+	//r, e := sc.insertStmt.ExecContext(ctx, args...)
 	if e != nil {
 		mysqlErr, ok := e.(*drv.MySQLError)
 		if ok {
@@ -44,4 +41,8 @@ func (sc *Schema[T]) Insert(ctx context.Context, data *T) error {
 	}
 
 	return nil
+}
+
+func (sc *Schema[T]) Insert(ctx context.Context, data *T) error {
+	return sc.InsertEx(ctx, sc.dbWrite.Ctx, data)
 }

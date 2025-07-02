@@ -17,8 +17,10 @@ type Schema[T interface{}] struct {
 	dbRead  *DB
 
 	insertStmt      *sql.Stmt
+	insertCmd       string
 	insertArgFields []*Field
 	updateAllStmt   *sql.Stmt
+	updateAllCmd    string
 	updateAllFields []*Field
 	primaryWhere    string
 	primaryFields   []*Field

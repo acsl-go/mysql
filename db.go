@@ -64,7 +64,7 @@ func (db *DB) Close() error {
 	return nil
 }
 
-func (db *DB) Tx(ctx context.Context, f func(context.Context, *sql.Tx) error) error {
+func (db *DB) Tx(ctx context.Context, f func(context.Context, IDBLike) error) error {
 	tx, e := db.Ctx.BeginTx(ctx, nil)
 	if e != nil {
 		return errors.Wrap(e, "Failed to start transaction")

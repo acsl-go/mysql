@@ -8,7 +8,7 @@ import (
 	"github.com/pkg/errors"
 )
 
-func (sc *Schema[T]) Update(ctx context.Context, data *T, columns ...string) (int64, error) {
+func (sc *Schema[T]) UpdateEx(ctx context.Context, db IDBLike, data *T, columns ...string) (int64, error) {
 	if sc.dbWrite == nil {
 		return 0, ErrNotReady
 	}
@@ -24,7 +24,8 @@ func (sc *Schema[T]) Update(ctx context.Context, data *T, columns ...string) (in
 		for _, field := range sc.primaryFields {
 			args = append(args, SerializeField(field.SerializeMethod, val.Field(field.EntityIndex).Interface()))
 		}
-		r, e := sc.updateAllStmt.ExecContext(ctx, args...)
+		r, e := db.ExecContext(ctx, sc.updateAllCmd, args...)
+		//r, e := sc.updateAllStmt.ExecContext(ctx, args...)
 		if e != nil {
 			mysqlErr, ok := e.(*drv.MySQLError)
 			if ok {
@@ -56,7 +57,7 @@ func (sc *Schema[T]) Update(ctx context.Context, data *T, columns ...string) (in
 		for _, field := range sc.primaryFields {
 			args = append(args, SerializeField(field.SerializeMethod, val.Field(field.EntityIndex).Interface()))
 		}
-		r, e := sc.dbWrite.Ctx.ExecContext(ctx, s, args...)
+		r, e := db.ExecContext(ctx, s, args...)
 		if e != nil {
 			mysqlErr, ok := e.(*drv.MySQLError)
 			if ok {
@@ -72,4 +73,8 @@ func (sc *Schema[T]) Update(ctx context.Context, data *T, columns ...string) (in
 			return n, nil
 		}
 	}
+}
+
+func (sc *Schema[T]) Update(ctx context.Context, data *T, columns ...string) (int64, error) {
+	return sc.UpdateEx(ctx, sc.dbWrite.Ctx, data, columns...)
 }

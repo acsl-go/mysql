@@ -7,12 +7,12 @@ import (
 	"github.com/pkg/errors"
 )
 
-func (ent *Entity[T]) SelectOne(ctx context.Context, where string, args ...any) (*T, error) {
+func (ent *Entity[T]) SelectOneEx(ctx context.Context, db IDBLike, where string, args ...any) (*T, error) {
 	sql := "SELECT " + ent.columnNamesStr + " FROM `" + ent.tableNameStr + "`"
 	if where != "" {
 		sql += " WHERE " + where
 	}
-	row := ent.dbRead.Ctx.QueryRowContext(ctx, sql, args...)
+	row := db.QueryRowContext(ctx, sql, args...)
 	v := new(T)
 	if e := ent.scan(row, v); e != nil {
 		if errors.Is(e, drv.ErrNoRows) {
@@ -23,12 +23,16 @@ func (ent *Entity[T]) SelectOne(ctx context.Context, where string, args ...any) 
 	return v, nil
 }
 
-func (ent *Entity[T]) Select(ctx context.Context, where string, args ...any) ([]*T, error) {
+func (ent *Entity[T]) SelectOne(ctx context.Context, where string, args ...any) (*T, error) {
+	return ent.SelectOneEx(ctx, ent.dbRead.Ctx, where, args...)
+}
+
+func (ent *Entity[T]) SelectEx(ctx context.Context, db IDBLike, where string, args ...any) ([]*T, error) {
 	sql := "SELECT " + ent.columnNamesStr + " FROM `" + ent.tableNameStr + "`"
 	if where != "" {
 		sql += " WHERE " + where
 	}
-	rows, e := ent.dbRead.Ctx.QueryContext(ctx, sql, args...)
+	rows, e := db.QueryContext(ctx, sql, args...)
 	if e != nil {
 		return nil, e
 	}
@@ -44,10 +48,14 @@ func (ent *Entity[T]) Select(ctx context.Context, where string, args ...any) ([]
 	return result, nil
 }
 
+func (ent *Entity[T]) Select(ctx context.Context, where string, args ...any) ([]*T, error) {
+	return ent.SelectEx(ctx, ent.dbRead.Ctx, where, args...)
+}
+
 // SelectPage selects a page of records from the database.
 // page_idx shoud be 1-based.
 // Return: records, current page index, page size, page_count, total count, error
-func (ent *Entity[T]) SelectPage(ctx context.Context, page_idx, page_size int64, where string, args ...any) ([]*T, int64, int64, int64, int64, error) {
+func (ent *Entity[T]) SelectPageEx(ctx context.Context, db IDBLike, page_idx, page_size int64, where string, args ...any) ([]*T, int64, int64, int64, int64, error) {
 	sql := "SELECT count(*) FROM `" + ent.tableNameStr + "`"
 	if where != "" {
 		sql += " WHERE " + where
@@ -55,7 +63,7 @@ func (ent *Entity[T]) SelectPage(ctx context.Context, page_idx, page_size int64,
 	var cnt int64
 	vargs := make([]interface{}, 0, len(args)+2)
 	vargs = append(vargs, args...)
-	if e := ent.dbRead.Ctx.QueryRowContext(ctx, sql, args...).Scan(&cnt); e != nil {
+	if e := db.QueryRowContext(ctx, sql, args...).Scan(&cnt); e != nil {
 		return nil, 0, 0, 0, 0, errors.Wrap(e, "SelectPage failed")
 	}
 
@@ -90,7 +98,7 @@ func (ent *Entity[T]) SelectPage(ctx context.Context, page_idx, page_size int64,
 		sql += "WHERE " + where
 	}
 	sql += " LIMIT ?, ?"
-	rows, e := ent.dbRead.Ctx.QueryContext(ctx, sql, vargs...)
+	rows, e := db.QueryContext(ctx, sql, vargs...)
 	if e != nil {
 		return nil, 0, 0, 0, 0, errors.Wrap(e, "SelectPage failed")
 	}
@@ -104,4 +112,8 @@ func (ent *Entity[T]) SelectPage(ctx context.Context, page_idx, page_size int64,
 		result = append(result, v)
 	}
 	return result, page_idx, page_size, page_count, cnt, nil
+}
+
+func (ent *Entity[T]) SelectPage(ctx context.Context, page_idx, page_size int64, where string, args ...any) ([]*T, int64, int64, int64, int64, error) {
+	return ent.SelectPageEx(ctx, ent.dbRead.Ctx, page_idx, page_size, where, args...)
 }
